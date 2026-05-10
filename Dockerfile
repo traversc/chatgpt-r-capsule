@@ -72,7 +72,7 @@ RUN "${PREFIX}/Rscript-capsule" /tmp/build/install-capsule-packages.R /tmp/build
 
 RUN find "${PREFIX}" -type f \( -name "*.so" -o -perm -111 \) -print0 | \
       xargs -0 -r ldd 2>/dev/null | \
-      awk '/=> \// {print $3} /^\// {print $1}' | \
+      awk '/=> \// { print $3 } $1 ~ /^\// && $1 !~ /:$/ { print $1 }' | \
       sort -u | \
       grep -Ev '/(ld-linux|libc\.so|libm\.so|libpthread\.so|libdl\.so|librt\.so|libresolv\.so|libnsl\.so|libutil\.so)\.' | \
       xargs -r -I{} cp -L "{}" "${PREFIX}/lib/" || true

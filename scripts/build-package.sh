@@ -70,7 +70,10 @@ archive="${safe_name}-package-r${R_VERSION}-${BASE_LABEL}-x86_64.tar.gz"
 
 find "$lib" -type f -name "*.so" -print0 | \
   xargs -0 -r ldd 2>/dev/null | \
-  awk '/=> \// {print $3} /^\// {print $1}' | \
+  awk '
+    /=> \// { print $3 }
+    $1 ~ /^\// && $1 !~ /:$/ { print $1 }
+  ' | \
   sort -u | \
   grep -Ev '/(ld-linux|libc\.so|libm\.so|libpthread\.so|libdl\.so|librt\.so|libresolv\.so|libnsl\.so|libutil\.so)\.' | \
   xargs -r -I{} cp -L "{}" "$syslib/" || true
