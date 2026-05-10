@@ -1,0 +1,9 @@
+cran::remotes
+cran::dplyr
+cran::tidyr
+cran::readr
+cran::data.table
+cran::ggplot2
+cran::jsonlite
+cran::readxl
+cran::writexl
