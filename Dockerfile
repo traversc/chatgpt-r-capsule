@@ -1,9 +1,10 @@
-ARG BASE_IMAGE=debian:12
+ARG BASE_IMAGE=debian:13-slim
+
 FROM ${BASE_IMAGE}
 
 ARG R_VERSION=4.6.0
 ARG CAPSULE_NAME=chatgpt-r-capsule
-ARG BASE_LABEL=debian12
+ARG BASE_LABEL=debian13
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PREFIX=/opt/${CAPSULE_NAME}
@@ -31,7 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxt-dev \
     libblas-dev \
     liblapack-dev \
-  && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp/build
 
@@ -40,11 +41,11 @@ RUN major="${R_VERSION%%.*}" && \
     tar xf "R-${R_VERSION}.tar.xz" && \
     cd "R-${R_VERSION}" && \
     ./configure \
-      --prefix="${PREFIX}/R" \
-      --enable-R-shlib \
-      --with-blas \
-      --with-lapack \
-      --with-x=no && \
+        --prefix="${PREFIX}/R" \
+        --enable-R-shlib \
+        --with-blas \
+        --with-lapack \
+        --with-x=no && \
     make -j"$(nproc)" && \
     make install
 
@@ -71,13 +72,19 @@ COPY scripts/install-capsule-packages.R /tmp/build/install-capsule-packages.R
 RUN "${PREFIX}/Rscript-capsule" /tmp/build/install-capsule-packages.R /tmp/build/packages.txt
 
 RUN find "${PREFIX}" -type f \( -name "*.so" -o -perm -111 \) -print0 | \
-      xargs -0 -r ldd 2>/dev/null | \
-      awk '/=> \// { print $3 } $1 ~ /^\// && $1 !~ /:$/ { print $1 }' | \
-      sort -u | \
-      grep -Ev '/(ld-linux|libc\.so|libm\.so|libpthread\.so|libdl\.so|librt\.so|libresolv\.so|libnsl\.so|libutil\.so)\.' | \
-      xargs -r -I{} cp -L "{}" "${PREFIX}/lib/" || true
+    xargs -0 -r ldd 2>/dev/null | \
+    awk '/=> \// { print $3 } $1 ~ /^\// && $1 !~ /:$/ { print $1 }' | \
+    sort -u | \
+    grep -Ev '/(ld-linux|libc\.so|libm\.so|libpthread\.so|libdl\.so|librt\.so|libresolv\.so|libnsl\.so|libutil\.so|libstdc\+\+\.so|libgcc_s\.so)\.' | \
+    xargs -r -I{} cp -L "{}" "${PREFIX}/lib/" || true
 
-RUN "${PREFIX}/Rscript-capsule" -e 'cat("hello world\n")'
+# Guard against accidentally bundling compiler/runtime libraries.
+RUN ! find "${PREFIX}/lib" \
+    \( -name 'libstdc++.so*' -o -name 'libgcc_s.so*' \) \
+    -print -quit | grep .
+
+# Basic smoke test.
+RUN "${PREFIX}/Rscript-capsule" -e 'cat(R.version.string, "\n"); print(.libPaths()); cat("hello world\n")'
 
 RUN mkdir -p /out && \
     cd /opt && \

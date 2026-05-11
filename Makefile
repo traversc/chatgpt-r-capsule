@@ -1,9 +1,9 @@
 R_VERSION ?= 4.6.0
-BASE_IMAGE ?= debian:12
-BASE_LABEL ?= debian12
+BASE_IMAGE ?= debian:13-slim
+BASE_LABEL ?= debian13
 CAPSULE_NAME ?= chatgpt-r-capsule
 
-IMAGE := $(CAPSULE_NAME):r-$(R_VERSION)
+IMAGE := $(CAPSULE_NAME):r-$(R_VERSION)-$(BASE_LABEL)
 DIST := dist
 PKG_DIST := $(DIST)/packages
 TARBALL := $(DIST)/$(CAPSULE_NAME)-$(R_VERSION)-$(BASE_LABEL)-x86_64.tar.gz
